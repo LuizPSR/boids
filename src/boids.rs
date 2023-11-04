@@ -189,24 +189,46 @@ fn vision_system(
     }
 }
 
+fn go_towards(
+    &boid: Boid,
+    pos: Option<Vec2>,
+    weight: f32
+) {
+    if pos.is_some() {
+        if let Some(dir) = (pos.unwrap() - boid.pos).try_normalize() {
+            boid.dir = boid
+                .dir
+                .lerp(dir, strength)
+        }
+    }
+}
+
+fn go_away(
+    &boid: Boid,
+    pos: Option<Vec2>,
+    weight: f32
+) {
+    if pos.is_some() {
+        if let Some(dir) = (pos.unwrap() - boid.pos).try_normalize() {
+            boid.dir = boid
+                .dir
+                .lerp(dir, strength)
+        }
+    }
+}
+
 fn movement_system(
-    mut boids: Query<(&mut Transform, &mut Boid, Entity)>,
+    mut boids: Query<(&mut Transform, &mut Boid, Flock)>,
     mut flocks: Query<(&Flock)>,
     time: Res<Time>,
     factors: Res<Factors>,
 ) {
     // calculate boid current movement
-    for (_, mut boid, entity) in boids.iter_mut() {
-        let Ok((flock, _)) = flocks.get(entity) else {panic!("erro while geting entity")};
+    for (_, mut boid, flock) in boids.iter_mut() {
 
-        if flock.pos.is_some() {
-            if let Some(dir) = (flock.pos.unwrap() - boid.pos).try_normalize() {
-                let strength = factors.cohesion * time.delta_seconds();
-                boid.dir = boid
-                    .dir
-                    .lerp(dir, strength)
-            }
-        }
+        go_towards(&boid, flock.pos, factors.cohesion * time.delta_seconds());
+        go_towards(&boid, factors.goal_pos, factors.goal_weight * time.delta_seconds());
+        go_away(&boid, flock.avoid_pos, factors.separation * time.delta_seconds())
 
         if let Some(dir) = flock.dir {
             let strength = factors.alignment * time.delta_seconds();
@@ -214,33 +236,9 @@ fn movement_system(
                 .dir
                 .lerp(dir, strength)
         }
-
-        if flock.avoid_pos.is_some() {
-            if let Some(dir) = (boid.pos - flock.avoid_pos.unwrap()).try_normalize() {
-                let strength = factors.separation * time.delta_seconds();
-                boid.dir = boid
-                    .dir
-                    .lerp(dir, strength)
-            }
-        }
-
-        // seek goal
-        if factors.goal_pos.is_some() { 
-            if let Some(dir) = (factors.goal_pos.unwrap() - boid.pos).try_normalize() {
-                println!("Boid");
-                println!("{}", factors.goal_pos.unwrap());
-                println!("{}", boid.pos);
-                println!("{}", dir);
-                let strength = factors.goal_weight * time.delta_seconds();
-                boid.dir = boid
-                    .dir
-                    .lerp(dir, strength)
-            }
-        }
-        
     }
 
-    // apply new dirocity and movement on transform
+    // apply new direction and movement on transform
     for (mut trans, boid, _) in boids.iter_mut() {
         trans.rotation = Quat::from_rotation_arc(Vec3::Y, boid.dir.extend(0.0));
         let delta = boid.dir * factors.speed * time.delta_seconds();
@@ -257,6 +255,7 @@ impl Plugin for BoidsPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, spawn_boids_system);
         app.add_systems(Update, (
+            vision_system,
             movement_system,
             respawn_boids_system
         ));
