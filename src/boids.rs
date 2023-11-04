@@ -169,13 +169,12 @@ fn respawn_boids_system(
     }
 }
 
-fn movement_system(
-    mut boids: Query<(&mut Transform, &mut Boid, Entity)>,
+fn vision_system(
+    mut boids: Query<(&Boid, Entity)>,
     mut flocks: Query<(&mut Flock, Entity)>,
-    time: Res<Time>,
     factors: Res<Factors>,
 ) {
-    // find the current local flock
+    // recalculate local flock of each boid
     for (mut flock, entity) in flocks.iter_mut() {
 
         let mut pos = Vec2::ZERO;
@@ -219,7 +218,14 @@ fn movement_system(
             flock.avoid_pos = Some(avoid_pos / close_neighbor_count as f32);
         }
     }
+}
 
+fn movement_system(
+    mut boids: Query<(&mut Transform, &mut Boid, Entity)>,
+    mut flocks: Query<(&Flock)>,
+    time: Res<Time>,
+    factors: Res<Factors>,
+) {
     // calculate boid current movement
     for (_, mut boid, entity) in boids.iter_mut() {
         let Ok((flock, _)) = flocks.get(entity) else {panic!("erro while geting entity")};
@@ -241,7 +247,7 @@ fn movement_system(
         }
 
         if flock.avoid_pos.is_some() {
-            if let Some(dir) = (boid.pos - flock.pos.unwrap()).try_normalize() {
+            if let Some(dir) = (boid.pos - flock.avoid_pos.unwrap()).try_normalize() {
                 let strength = factors.separation * time.delta_seconds();
                 boid.dir = boid
                     .dir
