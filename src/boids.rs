@@ -48,19 +48,15 @@ struct Flock {
     avoid_pos: Option<Vec2>,
 }
 
-const INITIAL_POPULATIONS: u8 = 100;
-fn spawn_boids_system(
+fn spawn_boids(
     mut commands: Commands,
-    win: Query<&Window, With<PrimaryWindow>>,
-    asset_server: Res<AssetServer>,
+    number: f32,
+    width: f32,
+    height: f32
 ) {
-    let window = win.get_single().unwrap();
-    let height = window.height();
-    let width = window.width();
-
     let mut rng = rand::thread_rng();
 
-    for _ in 0..INITIAL_POPULATIONS {
+    for _ in 0..number {
         // get initial position and direction for boid
         let pos = Vec2::new(
             rng.gen_range(0.0 .. width),
@@ -68,14 +64,14 @@ fn spawn_boids_system(
         );
 
         let mut dir = Vec2::new(
-            rng.gen_range(0.0 .. width),
-            rng.gen_range(0.0 .. height),
+            rng.gen_range(0.0 .. 1.0),
+            rng.gen_range(0.0 .. 1.0),
         );
         // must have a direction
         while dir.normalize_or_zero() == Vec2::ZERO {
             dir = Vec2::new(
-                rng.gen_range(0.0 .. width),
-                rng.gen_range(0.0 .. height),
+                rng.gen_range(0.0 .. 1.0),
+                rng.gen_range(0.0 .. 1.0),
             );
         }
 
@@ -100,6 +96,19 @@ fn spawn_boids_system(
                 avoid_pos: None,                
             });
     }
+}
+
+const INITIAL_POPULATIONS: u8 = 100;
+fn spawn_boids_system(
+    mut commands: Commands,
+    win: Query<&Window, With<PrimaryWindow>>,
+    asset_server: Res<AssetServer>,
+) {
+    let window = win.get_single().unwrap();
+    let height = window.height();
+    let width = window.width();
+
+    spawn_boids(commands, INITIAL_POPULATIONS, width, height);
 
     // spawn camera
     commands
@@ -124,48 +133,8 @@ fn respawn_boids_system(
         let window = win.get_single().unwrap();
         let height = window.height();
         let width = window.width();
-
-        let mut rng = rand::thread_rng();
-
-        for _ in 0..INITIAL_POPULATIONS {
-            // get initial position and direction for boid
-            let pos = Vec2::new(
-                rng.gen_range(0.0 .. width),
-                rng.gen_range(0.0 .. height),
-            );
-
-            let mut dir = Vec2::new(
-                rng.gen_range(0.0 .. width),
-                rng.gen_range(0.0 .. height),
-            );
-            // must have a direction
-            while dir.normalize_or_zero() == Vec2::ZERO {
-                dir = Vec2::new(
-                    rng.gen_range(0.0 .. width),
-                    rng.gen_range(0.0 .. height),
-                );
-            }
-
-            // spawn
-            commands.spawn(SpriteBundle {
-                transform: Transform {
-                    translation: pos.extend(0.),
-                    rotation: Quat::from_rotation_arc(Vec3::Y, dir.extend(0.0)),
-                    scale: Vec3::new(0.5, 1., 1.),
-                },
-                texture: asset_server.load("boid.png"),
-                ..default()
-            })
-            .insert(Boid {
-                pos: pos, 
-                dir: dir,
-            })
-            .insert(Flock {
-                pos: None,
-                dir: None,
-                avoid_pos: None,                
-            });
-        }       
+        
+        spawn_boids(commands, INITIAL_POPULATIONS, width, height);
     }
 }
 
