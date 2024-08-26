@@ -1,5 +1,6 @@
 extern crate bevy;
 extern crate bevy_egui;
+extern crate rand;
 
 use bevy::{
     diagnostic::FrameTimeDiagnosticsPlugin, 

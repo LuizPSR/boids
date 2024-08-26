@@ -52,7 +52,7 @@ fn fps_text_setup (mut commands: Commands, asset_server: Res<AssetServer>) {
         cohesion: 0.0,
         alignment: 0.0,
         separation: 0.0,
-        collision_avoidance: 0.0,
+        personal_space: 0.0,
 
     });
 }
@@ -78,11 +78,12 @@ fn settings_system (
         ui.add(egui::Slider::new(&mut factors.vision, 0.0..=100.0).text("Vision"));
         ui.add(egui::Checkbox::new(&mut factors.flocking, "Flocking"));
 
+        let max_personal_space = factors.vision;
         ui.collapsing("Behavior", |ui| {
             ui.add(egui::Slider::new(&mut factors.alignment, 0.0..=50.0).text("Alignment"));
             ui.add(egui::Slider::new(&mut factors.cohesion, 0.0..=50.0).text("Cohesion"));
             ui.add(egui::Slider::new(&mut factors.separation, 0.0..=50.0).text("Separation"));
-            ui.add(egui::Slider::new(&mut factors.collision_avoidance, 0.0..=50.0).text("Collision Avoidance"));
+            ui.add(egui::Slider::new(&mut factors.personal_space, 0.0..=max_personal_space).text("Separation Distance"));
         });
     });
 }
